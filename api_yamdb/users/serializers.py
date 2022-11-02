@@ -5,13 +5,10 @@ from rest_framework.serializers import (CharField, ChoiceField, EmailField,
 from .models import ROLE_CHOICES, USER, User
 
 
-class SignUpSerializer(ModelSerializer):
-    email = EmailField(required=True, max_length=254)
-
-    class Meta:
-        fields = ('email', 'username',)
-        model = User
-
+class ValidateUsernameEmailMixin:
+    """Every custom serializer for users contains validate_email() and
+    validate_username methods. This mixin created for inherit his behavior.
+    """
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
             raise ValidationError(
@@ -29,9 +26,13 @@ class SignUpSerializer(ModelSerializer):
         return value
 
 
-class AdminUsersSerializer(ModelSerializer):
+class BaseUserSerializer(ModelSerializer, ValidateUsernameEmailMixin):
+    """Base user serializer. Inherit validation methods for email and
+    username. Provides choosing roles with default value 'user'.
+    Content is equal to admin serializer.
+    """
+    email = EmailField(max_length=254, required=True)
     role = ChoiceField(choices=ROLE_CHOICES, default=USER)
-    email = EmailField(required=True, max_length=254)
 
     class Meta:
         fields = (
@@ -44,21 +45,17 @@ class AdminUsersSerializer(ModelSerializer):
         )
         model = User
 
-    def validate_email(self, value):
-        if User.objects.filter(email__iexact=value).exists():
-            raise ValidationError(
-                'Пользователь с таким email уже существует.'
-            )
 
-        return value
+class AdminUserSerializer(BaseUserSerializer):
+    pass
 
-    def validate_username(self, value):
-        if value == 'me':
-            raise ValidationError(
-                'Запрещено использовать "me" в качестве имени пользователя'
-            )
 
-        return value
+class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
+    email = EmailField(max_length=254, required=True)
+
+    class Meta:
+        fields = ('email', 'username',)
+        model = User
 
 
 class TokenSerializer(Serializer):
@@ -66,34 +63,6 @@ class TokenSerializer(Serializer):
     username = CharField(required=True)
 
 
-class UserSerializer(ModelSerializer):
+class UserSerializer(BaseUserSerializer):
     role = CharField(read_only=True)
-    email = EmailField(required=True, max_length=254)
     username = CharField(required=True)
-
-    class Meta:
-        fields = (
-            'username',
-            'email',
-            'first_name',
-            'last_name',
-            'bio',
-            'role'
-        )
-        model = User
-
-    def validate_email(self, value):
-        if User.objects.filter(email__iexact=value).exists():
-            raise ValidationError(
-                'Пользователь с таким email уже существует.'
-            )
-
-        return value
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise ValidationError(
-                'Запрещено использовать "me" в качестве имени пользователя'
-            )
-
-        return value

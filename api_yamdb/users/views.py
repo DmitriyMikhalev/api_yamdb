@@ -1,13 +1,17 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework import filters
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
-from .serializers import SignUpSerializer, TokenSerializer
+from .permissions import IsAdmin
+from .serializers import (AdminUsersSerializer, SignUpSerializer,
+                          TokenSerializer, UserSerializer)
 from .utils import send_verify_code
 
 
@@ -47,3 +51,35 @@ def token(request):
         data={'token': f'{str(jwt_token_pair.access_token)}'},
         status=HTTP_200_OK
     )
+
+
+class UserViewSet(ModelViewSet):
+    filter_backends = (filters.SearchFilter,)
+    lookup_field = 'username'
+    permission_classes = (IsAdmin,)
+    search_fields = ('username',)
+    serializer_class = AdminUsersSerializer
+    queryset = User.objects.all()
+
+    # This action is working with one instance, but detail=False means that
+    # DRF shouldn't create Detail View Route which required param like pk.
+    @action(methods=['GET', 'PATCH'], detail=False,
+            permission_classes=[IsAuthenticated])
+    def me(self, request):
+        if request.method == 'GET':
+            serializer = UserSerializer(instance=request.user)
+            return Response(serializer.data, status=HTTP_200_OK)
+
+        serializer = UserSerializer(
+            instance=request.user,
+            data=request.data,
+            partial=True
+        )
+        if not serializer.is_valid():
+            return Response(
+                data=serializer.errors,
+                status=HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save()
+        return Response(serializer.data, status=HTTP_200_OK)

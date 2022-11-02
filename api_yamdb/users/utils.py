@@ -8,7 +8,10 @@ User = get_user_model()
 
 
 def send_verify_code(user: User) -> None:
-    confirmation_code = default_token_generator.make_token(user)
+    """Send verification code for signup procedure from setting.EMAIL_SENDER
+    mail.
+    """
+    confirmation_code = default_token_generator.make_token(user=user)
     send_mail(
         from_email=EMAIL_SENDER,
         message=(

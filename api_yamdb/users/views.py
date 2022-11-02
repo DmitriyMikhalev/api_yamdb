@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .permissions import IsAdmin
-from .serializers import (AdminUsersSerializer, SignUpSerializer,
+from .serializers import (AdminUserSerializer, SignUpSerializer,
                           TokenSerializer, UserSerializer)
 from .utils import send_verify_code
 
@@ -18,6 +18,10 @@ from .utils import send_verify_code
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
+    """Function for signup procedure. If given data is correct, user will get
+    email with verification code to recieve JWT at ../token/ endpoint. Return
+    given data and HTTP200 or errors that have occured and HTTP400.
+    """
     serializer = SignUpSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
@@ -31,6 +35,10 @@ def signup(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def token(request):
+    """Function for receiving JWT via verification code from email. If given
+    data is correct, returns JSON {'token': ...} and HTTP200 else returns
+    errors that have occured and HTTP400.
+    """
     serializer = TokenSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
@@ -57,22 +65,26 @@ class UserViewSet(ModelViewSet):
     filter_backends = (filters.SearchFilter,)
     lookup_field = 'username'
     permission_classes = (IsAdmin,)
-    search_fields = ('username',)
-    serializer_class = AdminUsersSerializer
     queryset = User.objects.all()
+    search_fields = ('username',)
+    serializer_class = AdminUserSerializer
 
     # This action is working with one instance, but detail=False means that
-    # DRF shouldn't create Detail View Route which required param like pk.
-    @action(methods=['GET', 'PATCH'], detail=False,
+    # DRF shouldn't create Detail View Route which requests parameter like pk.
+    @action(detail=False, methods=['GET', 'PATCH'],
             permission_classes=[IsAuthenticated])
     def me(self, request):
+        """Allows to view or change information about yourself. Only for
+        authorized users. If given data is correct returns this data and
+        HTTP200 else returns errors that have occured and HTTP400.
+        """
         if request.method == 'GET':
             serializer = UserSerializer(instance=request.user)
             return Response(serializer.data, status=HTTP_200_OK)
 
         serializer = UserSerializer(
-            instance=request.user,
             data=request.data,
+            instance=request.user,
             partial=True
         )
         if not serializer.is_valid():

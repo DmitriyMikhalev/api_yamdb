@@ -1,12 +1,12 @@
-from reviews.models import Review
-from .serializers import CommentSerializer, ReviewSerializer
-from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
+from rest_framework import viewsets
+from reviews.models import Review
+
+from .serializers import CommentSerializer, ReviewSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    # permission_classes =
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -21,7 +21,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    # permission_classes =
 
     def get_queryset(self):
         review_id = self.kwargs.get('review_id')

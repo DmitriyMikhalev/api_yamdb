@@ -9,7 +9,7 @@ class Review(models.Model):
         related_name='reviews',
         verbose_name='Произведение'
     )
-    text = models.TimeField()
+    text = models.TextField()
     author = models.ForeignKey(
         'User',
         on_delete=models.CASCADE,

@@ -27,6 +27,7 @@ class CategoryViewSet(ModelViewSet):
 
 
 class CommentViewSet(ModelViewSet):
+    permission_classes = (IsAdminOrReadOnly,)
     serializer_class = CommentSerializer
 
     def get_queryset(self):
@@ -48,6 +49,7 @@ class GenreViewSet(ModelViewSet):
 
 class ReviewViewSet(ModelViewSet):
     serializer_class = ReviewSerializer
+    permission_classes = (IsAdminOrReadOnly,)
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')

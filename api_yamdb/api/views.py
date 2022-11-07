@@ -15,7 +15,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import Category, Genre, Review, Title
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
-                          IsAuthorOrModeRatOrOrAdminOrReadOnly)
+                          IsAuthorOrModeratorOrAdminOrReadOnly)
 from .serializers import (AdminUserSerializer, CategorySerializer,
                           CommentSerializer, GenreSerializer,
                           ReadOnlyTitleSerializer, ReviewSerializer,
@@ -34,17 +34,17 @@ class CreateDeliteViewSet(mixins.CreateModelMixin,
 
 
 class CategoryViewSet(CreateDeliteViewSet):
+    filter_backends = (SearchFilter,)
+    lookup_field = 'slug'
     permission_classes = (IsAdminOrReadOnly,)
     queryset = Category.objects.all()
-    filter_backends = (SearchFilter,)
     search_fields = ('name', )
     serializer_class = CategorySerializer
-    lookup_field = 'slug'
 
 
 class CommentViewSet(ModelViewSet):
+    permission_classes = (IsAuthorOrModeratorOrAdminOrReadOnly,)
     serializer_class = CommentSerializer
-    permission_classes = (IsAuthorOrModeRatOrOrAdminOrReadOnly,)
 
     def get_review(self):
         return get_object_or_404(Review, id=self.kwargs.get('review_id'))
@@ -57,22 +57,22 @@ class CommentViewSet(ModelViewSet):
 
 
 class GenreViewSet(CreateDeliteViewSet):
-    queryset = Genre.objects.all()
-    serializer_class = GenreSerializer
-    permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (SearchFilter,)
-    search_fields = ('name', )
     lookup_field = 'slug'
+    permission_classes = (IsAdminOrReadOnly,)
+    queryset = Genre.objects.all()
+    search_fields = ('name', )
+    serializer_class = GenreSerializer
 
 
 class TitleViewSet(ModelViewSet):
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TitleFilter
+    permission_classes = (IsAdminOrReadOnly,)
     queryset = Title.objects.all().annotate(
         Avg("reviews__score")
     ).order_by("name")
     serializer_class = TitleSerializer
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = TitleFilter
 
     def get_serializer_class(self):
         if self.action in ("retrieve", "list"):
@@ -81,8 +81,8 @@ class TitleViewSet(ModelViewSet):
 
 
 class ReviewViewSet(ModelViewSet):
+    permission_classes = (IsAuthorOrModeratorOrAdminOrReadOnly,)
     serializer_class = ReviewSerializer
-    permission_classes = (IsAuthorOrModeRatOrOrAdminOrReadOnly,)
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')

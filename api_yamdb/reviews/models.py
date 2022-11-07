@@ -57,6 +57,14 @@ class Genre(models.Model):
     )
 
 
+class GenreTitle(models.Model):
+    genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
+    title = models.ForeignKey('Title', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.title} {self.genre}'
+
+
 class Review(models.Model):
     title = models.ForeignKey(
         'Title',
@@ -102,8 +110,12 @@ class Title(models.Model):
         MinValueValidator(0),
         MaxValueValidator(datetime.datetime.now().year)])
     description = models.TextField(blank=True, default='')
-    genre = models.ForeignKey(
-        Genre, on_delete=models.SET_NULL, null=True)
+    genre = models.ManyToManyField(
+        'Genre',
+        through='GenreTitle',
+        related_name='genre',
+        verbose_name='Жанр'
+    )
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, null=True)
 

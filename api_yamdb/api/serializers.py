@@ -52,7 +52,7 @@ class AdminUserSerializer(BaseUserSerializer):
 class CategorySerializer(ModelSerializer):
 
     class Meta:
-        fields = '__all__'
+        fields = ('name', 'slug')
         model = Category
 
 

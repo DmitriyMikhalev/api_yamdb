@@ -23,6 +23,32 @@ class Category(models.Model):
     )
 
 
+class Comment(models.Model):
+    review = models.ForeignKey(
+        'Review',
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    text = models.TextField(verbose_name='Текст')
+    author = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='Автор'
+    )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации'
+    )
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        return self.text
+
+
 class Genre(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(
@@ -31,14 +57,65 @@ class Genre(models.Model):
     )
 
 
+class GenreTitle(models.Model):
+    genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
+    title = models.ForeignKey('Title', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.title} {self.genre}'
+
+
+class Review(models.Model):
+    title = models.ForeignKey(
+        'Title',
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Произведение'
+    )
+    text = models.TextField()
+    author = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Автор'
+    )
+    score = models.IntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(10)
+        ],
+    )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации'
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'],
+                name='unique_review'
+            )
+        ]
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        return self.text
+
+
 class Title(models.Model):
     name = models.CharField(max_length=256)
     year = models.IntegerField(validators=[
         MinValueValidator(0),
         MaxValueValidator(datetime.datetime.now().year)])
     description = models.TextField(blank=True, default='')
-    genre = models.ForeignKey(
-        Genre, on_delete=models.SET_NULL, null=True)
+    genre = models.ManyToManyField(
+        'Genre',
+        through='GenreTitle',
+        related_name='genre',
+        verbose_name='Жанр'
+    )
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, null=True)
 

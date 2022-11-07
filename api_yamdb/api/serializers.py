@@ -1,8 +1,11 @@
 from rest_framework.exceptions import ValidationError
+from rest_framework.generics import get_object_or_404
 from rest_framework.serializers import (CharField, ChoiceField,
                                         CurrentUserDefault, EmailField,
-                                        ModelSerializer, Serializer,
-                                        SlugRelatedField, ValidationError)
+                                        IntegerField, ModelSerializer,
+                                        Serializer, SlugRelatedField,
+                                        ValidationError)
+
 from reviews.models import (ROLE_CHOICES, USER, Category, Comment, Genre,
                             Review, Title, User)
 
@@ -55,15 +58,18 @@ class AdminUserSerializer(BaseUserSerializer):
 class CategorySerializer(ModelSerializer):
 
     class Meta:
-        fields = '__all__'
+        fields = ('name', 'slug')
         model = Category
 
 
 class CommentSerializer(ModelSerializer):
+    review = SlugRelatedField(
+        slug_field='text',
+        read_only=True
+    )
     author = SlugRelatedField(
         slug_field='username',
-        read_only=True,
-        default=CurrentUserDefault()
+        read_only=True
     )
 
     class Meta:
@@ -74,41 +80,35 @@ class CommentSerializer(ModelSerializer):
 class GenreSerializer(ModelSerializer):
 
     class Meta:
-        fields = '__all__'
         model = Genre
+        fields = ('name', 'slug')
 
 
 class ReviewSerializer(ModelSerializer):
-    author = SlugRelatedField(
-        slug_field='username',
+    title = SlugRelatedField(
+        slug_field='name',
         read_only=True,
-        default=CurrentUserDefault()
     )
+    author = SlugRelatedField(
+        default=CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
+    )
+
+    def validate(self, data):
+        request = self.context['request']
+        author = request.user
+        title_id = self.context['view'].kwargs.get('title_id')
+        title = get_object_or_404(Title, pk=title_id)
+        if request.method == 'POST':
+            if Review.objects.filter(title=title, author=author).exists():
+                raise ValidationError('Вы не можете добавить более'
+                                      'одного отзыва на произведение')
+        return data
 
     class Meta:
         model = Review
         fields = '__all__'
-
-    def validate(self, data):
-        if self.context['request'] != 'POST':
-            return data
-        title_id = self.context['view'].kwargs.get('title_id')
-        author = self.context['request'].user
-        if Review.objects.filter(
-            author=author,
-            title=title_id
-        ).exists():
-            raise ValidationError(
-                'Вы уже написали отзыв к этому произведению.'
-            )
-        return data
-
-    def validate(self, value):
-        if not 1 <= value <= 10:
-            raise ValidationError(
-                'Оценкой может быть целое число в диапазоне от 1 до 10.'
-            )
-        return value
 
 
 class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
@@ -120,10 +120,32 @@ class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
 
 
 class TitleSerializer(ModelSerializer):
+    genre = SlugRelatedField(
+        slug_field='slug', many=True, queryset=Genre.objects.all()
+    )
+    category = SlugRelatedField(
+        slug_field='slug', queryset=Category.objects.all()
+    )
 
     class Meta:
-        fields = '__all__'
         model = Title
+        fields = (
+            '__all__'
+        )
+
+
+class ReadOnlyTitleSerializer(ModelSerializer):
+    rating = IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
+
+    class Meta:
+        model = Title
+        fields = (
+            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
+        )
 
 
 class TokenSerializer(Serializer):

@@ -2,8 +2,13 @@ venv/
 env/
 __pycache__/
 .git/
+.idea/
+.env/
 .vscode/
 sent_emails/
 
-db.sqlite3
 .DS_Store
+.env
+
+!sample.env
+db.sqlite3

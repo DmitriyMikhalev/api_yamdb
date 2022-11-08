@@ -7,3 +7,4 @@ pytest-django~=4.4
 pytest-pythonpath~=0.7
 djangorestframework-simplejwt~=4.7
 django-filter==2.4.0
+python-dotenv~=0.21

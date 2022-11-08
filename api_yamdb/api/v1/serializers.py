@@ -5,9 +5,8 @@ from rest_framework.serializers import (CharField, ChoiceField,
                                         IntegerField, ModelSerializer,
                                         Serializer, SlugRelatedField,
                                         ValidationError)
-
-from reviews.models import (ROLE_CHOICES, USER, Category, Comment, Genre,
-                            Review, Title, User)
+from reviews.models import Category, Comment, Genre, Review, Title
+from users.models import ROLE_CHOICES, USER, User
 
 
 class ValidateUsernameEmailMixin:
@@ -28,15 +27,19 @@ class ValidateUsernameEmailMixin:
                 'Запрещено использовать "me" в качестве имени пользователя'
             )
 
+        if User.objects.filter(username__iexact=value).exists():
+            raise ValidationError(
+                'Пользователь с таким username уже существует.'
+            )
+
         return value
 
 
-class BaseUserSerializer(ModelSerializer, ValidateUsernameEmailMixin):
+class UserSerializer(ModelSerializer, ValidateUsernameEmailMixin):
     """Base user serializer. Inherit validation methods for email and
     username. Provides choosing roles with default value 'user'.
-    Content is equal to admin serializer.
     """
-    email = EmailField(max_length=254, required=True)
+    email = EmailField(required=True)
     role = ChoiceField(choices=ROLE_CHOICES, default=USER)
 
     class Meta:
@@ -49,10 +52,6 @@ class BaseUserSerializer(ModelSerializer, ValidateUsernameEmailMixin):
             'role'
         )
         model = User
-
-
-class AdminUserSerializer(BaseUserSerializer):
-    pass
 
 
 class CategorySerializer(ModelSerializer):
@@ -112,7 +111,7 @@ class ReviewSerializer(ModelSerializer):
 
 
 class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
-    email = EmailField(max_length=254, required=True)
+    email = EmailField(required=True)
 
     class Meta:
         fields = ('email', 'username',)
@@ -153,6 +152,10 @@ class TokenSerializer(Serializer):
     username = CharField(required=True)
 
 
-class UserSerializer(BaseUserSerializer):
+class UserSerializerProtected(UserSerializer):
+    """Serializer with similar capabilities to the parent class but role field
+    isn't mutable. For example, if user wants to GET or PATCH info about
+    himself, GET request will give response with role field and PATCH request
+    will ignore changing role and give response with that field.
+    """
     role = CharField(read_only=True)
-    username = CharField(required=True)

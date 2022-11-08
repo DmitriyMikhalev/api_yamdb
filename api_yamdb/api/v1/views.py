@@ -1,4 +1,4 @@
-from api.filters import TitleFilter
+from api.v1.filters import TitleFilter
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
@@ -16,11 +16,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Genre, Review, Title
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorOrModeratorOrAdminOrReadOnly)
-from .serializers import (AdminUserSerializer, CategorySerializer,
+from .serializers import (CategorySerializer,
                           CommentSerializer, GenreSerializer,
                           ReadOnlyTitleSerializer, ReviewSerializer,
                           SignUpSerializer, TitleSerializer, TokenSerializer,
-                          UserSerializer)
+                          UserSerializer, UserSerializerProtected)
 from .utils import send_verify_code
 
 User = get_user_model()
@@ -103,8 +103,7 @@ def signup(request):
     given data and HTTP200 or errors that have occured and HTTP400.
     """
     serializer = SignUpSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     user = serializer.save()
     send_verify_code(user)
@@ -135,8 +134,7 @@ def token(request):
     errors that have occured and HTTP400.
     """
     serializer = TokenSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     username = serializer.data.get('username')
     confirmation_code = serializer.data.get('confirmation_code')
@@ -161,8 +159,8 @@ class UserViewSet(ModelViewSet):
     lookup_field = 'username'
     permission_classes = (IsAdmin,)
     queryset = User.objects.all()
-    search_fields = ('username',)
-    serializer_class = AdminUserSerializer
+    search_fields = ('=username',)
+    serializer_class = UserSerializer
 
     # This action is working with one instance, but detail=False means that
     # DRF shouldn't create Detail View Route which requests parameter like pk.
@@ -174,19 +172,15 @@ class UserViewSet(ModelViewSet):
         HTTP200 else returns errors that have occured and HTTP400.
         """
         if request.method == 'GET':
-            serializer = UserSerializer(instance=request.user)
+            serializer = UserSerializerProtected(instance=request.user)
             return Response(serializer.data, status=HTTP_200_OK)
 
-        serializer = UserSerializer(
+        serializer = UserSerializerProtected(
             data=request.data,
             instance=request.user,
             partial=True
         )
-        if not serializer.is_valid():
-            return Response(
-                data=serializer.errors,
-                status=HTTP_400_BAD_REQUEST
-            )
-
+        serializer.is_valid(raise_exception=True)
         serializer.save()
+
         return Response(serializer.data, status=HTTP_200_OK)

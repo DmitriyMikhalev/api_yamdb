@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -19,14 +20,14 @@ class User(AbstractUser):
         verbose_name='Биография'
     )
     email = models.EmailField(
-        max_length=254,
+        max_length=settings.LIMIT_EMAIL,
         unique=True,
         verbose_name='Электронная почта'
     )
     role = models.CharField(
         choices=ROLE_CHOICES,
         default=USER,
-        max_length=13,
+        max_length=settings.LIMIT_USER_CHAT,
         verbose_name='Статус прав'
     )
 

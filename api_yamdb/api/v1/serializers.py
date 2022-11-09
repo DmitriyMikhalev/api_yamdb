@@ -62,10 +62,6 @@ class CategorySerializer(ModelSerializer):
 
 
 class CommentSerializer(ModelSerializer):
-    review = SlugRelatedField(
-        slug_field='text',
-        read_only=True
-    )
     author = SlugRelatedField(
         slug_field='username',
         read_only=True
@@ -73,7 +69,7 @@ class CommentSerializer(ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ('id', 'text', 'pub_date', 'author', )
 
 
 class GenreSerializer(ModelSerializer):
@@ -84,10 +80,7 @@ class GenreSerializer(ModelSerializer):
 
 
 class ReviewSerializer(ModelSerializer):
-    title = SlugRelatedField(
-        slug_field='name',
-        read_only=True,
-    )
+    """Serializer для отзывов и оценок"""
     author = SlugRelatedField(
         default=CurrentUserDefault(),
         slug_field='username',
@@ -98,16 +91,17 @@ class ReviewSerializer(ModelSerializer):
         request = self.context['request']
         author = request.user
         title_id = self.context['view'].kwargs.get('title_id')
-        title = get_object_or_404(Title, pk=title_id)
-        if request.method == 'POST':
-            if Review.objects.filter(title=title, author=author).exists():
-                raise ValidationError('Вы не можете добавить более'
-                                      'одного отзыва на произведение')
+        if (request.method not in ('GET', 'PATCH')
+            and Review.objects.filter(
+            title_id=title_id,
+            author=author
+        ).exists()):
+            raise ValidationError('Может существовать только один отзыв!')
         return data
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
 
 
 class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):

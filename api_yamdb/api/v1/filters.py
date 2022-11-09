@@ -1,4 +1,5 @@
 from django_filters import rest_framework as filters
+
 from reviews.models import Title
 
 
@@ -21,5 +22,12 @@ class TitleFilter(filters.FilterSet):
     )
 
     class Meta:
+        fields = (
+            'id',
+            'name',
+            'year',
+            'description',
+            'genre',
+            'category',
+        )
         model = Title
-        fields = '__all__'

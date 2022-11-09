@@ -1,10 +1,10 @@
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import get_object_or_404
 from rest_framework.serializers import (CharField, ChoiceField,
                                         CurrentUserDefault, EmailField,
                                         IntegerField, ModelSerializer,
                                         Serializer, SlugRelatedField,
                                         ValidationError)
+
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import ROLE_CHOICES, USER, User
 
@@ -68,15 +68,20 @@ class CommentSerializer(ModelSerializer):
     )
 
     class Meta:
+        fields = (
+            'id',
+            'text',
+            'pub_date',
+            'author',
+        )
         model = Comment
-        fields = ('id', 'text', 'pub_date', 'author', )
 
 
 class GenreSerializer(ModelSerializer):
 
     class Meta:
-        model = Genre
         fields = ('name', 'slug')
+        model = Genre
 
 
 class ReviewSerializer(ModelSerializer):
@@ -100,8 +105,14 @@ class ReviewSerializer(ModelSerializer):
         return data
 
     class Meta:
+        fields = (
+            'id',
+            'text',
+            'author',
+            'score',
+            'pub_date',
+        )
         model = Review
-        fields = ('id', 'text', 'author', 'score', 'pub_date')
 
 
 class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
@@ -113,32 +124,43 @@ class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
 
 
 class TitleSerializer(ModelSerializer):
-    genre = SlugRelatedField(
-        slug_field='slug', many=True, queryset=Genre.objects.all()
-    )
     category = SlugRelatedField(
         slug_field='slug', queryset=Category.objects.all()
     )
+    genre = SlugRelatedField(
+        slug_field='slug', many=True, queryset=Genre.objects.all()
+    )
 
     class Meta:
-        model = Title
         fields = (
-            '__all__'
+            'id',
+            'category',
+            'description',
+            'genre',
+            'name',
+            'year',
         )
+        model = Title
 
 
 class ReadOnlyTitleSerializer(ModelSerializer):
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
     rating = IntegerField(
         source='reviews__score__avg', read_only=True
     )
-    genre = GenreSerializer(many=True)
-    category = CategorySerializer()
 
     class Meta:
-        model = Title
         fields = (
-            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
+            'id',
+            'name',
+            'year',
+            'rating',
+            'description',
+            'genre',
+            'category',
         )
+        model = Title
 
 
 class TokenSerializer(Serializer):

@@ -124,11 +124,11 @@ class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
 
 
 class TitleSerializer(ModelSerializer):
-    genre = SlugRelatedField(
-        slug_field='slug', many=True, queryset=Genre.objects.all()
-    )
     category = SlugRelatedField(
         slug_field='slug', queryset=Category.objects.all()
+    )
+    genre = SlugRelatedField(
+        slug_field='slug', many=True, queryset=Genre.objects.all()
     )
 
     class Meta:
@@ -144,12 +144,11 @@ class TitleSerializer(ModelSerializer):
 
 
 class ReadOnlyTitleSerializer(ModelSerializer):
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
     rating = IntegerField(
         source='reviews__score__avg', read_only=True
     )
-    genre = GenreSerializer(many=True)
-    category = CategorySerializer()
-    # permission_classes = (ReadOnly,)
 
     class Meta:
         model = Title

@@ -1,10 +1,10 @@
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import get_object_or_404
 from rest_framework.serializers import (CharField, ChoiceField,
                                         CurrentUserDefault, EmailField,
                                         IntegerField, ModelSerializer,
                                         Serializer, SlugRelatedField,
                                         ValidationError)
+
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import ROLE_CHOICES, USER, User
 
@@ -69,7 +69,12 @@ class CommentSerializer(ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'pub_date', 'author', )
+        fields = (
+            'id',
+            'text',
+            'pub_date',
+            'author',
+        )
 
 
 class GenreSerializer(ModelSerializer):
@@ -101,7 +106,13 @@ class ReviewSerializer(ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ('id', 'text', 'author', 'score', 'pub_date')
+        fields = (
+            'id',
+            'text',
+            'author',
+            'score',
+            'pub_date',
+        )
 
 
 class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
@@ -123,7 +134,12 @@ class TitleSerializer(ModelSerializer):
     class Meta:
         model = Title
         fields = (
-            '__all__'
+            'id',
+            'category',
+            'description',
+            'genre',
+            'name',
+            'year',
         )
 
 
@@ -133,11 +149,18 @@ class ReadOnlyTitleSerializer(ModelSerializer):
     )
     genre = GenreSerializer(many=True)
     category = CategorySerializer()
+    # permission_classes = (ReadOnly,)
 
     class Meta:
         model = Title
         fields = (
-            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
+            'id',
+            'name',
+            'year',
+            'rating',
+            'description',
+            'genre',
+            'category',
         )
 
 

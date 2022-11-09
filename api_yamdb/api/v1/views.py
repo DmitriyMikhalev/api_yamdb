@@ -4,7 +4,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins
+from rest_framework import mixins
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -26,19 +26,18 @@ from .utils import send_verify_code
 User = get_user_model()
 
 
-class CreateDeliteViewSet(mixins.CreateModelMixin,
+class CreateDeleteViewSet(mixins.CreateModelMixin,
                           mixins.ListModelMixin,
                           mixins.DestroyModelMixin,
                           GenericViewSet):
-    pass
-
-
-class CategoryViewSet(CreateDeliteViewSet):
     filter_backends = (SearchFilter,)
     lookup_field = 'slug'
     permission_classes = (IsAdminOrReadOnly,)
-    queryset = Category.objects.all()
     search_fields = ('name', )
+
+
+class CategoryViewSet(CreateDeleteViewSet):
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
@@ -56,28 +55,9 @@ class CommentViewSet(ModelViewSet):
         serializer.save(author=self.request.user, review=self.get_review())
 
 
-class GenreViewSet(CreateDeliteViewSet):
-    filter_backends = (SearchFilter,)
-    lookup_field = 'slug'
-    permission_classes = (IsAdminOrReadOnly,)
+class GenreViewSet(CreateDeleteViewSet):
     queryset = Genre.objects.all()
-    search_fields = ('name', )
     serializer_class = GenreSerializer
-
-
-class TitleViewSet(ModelViewSet):
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = TitleFilter
-    permission_classes = (IsAdminOrReadOnly,)
-    queryset = Title.objects.all().annotate(
-        Avg("reviews__score")
-    ).order_by("name")
-    serializer_class = TitleSerializer
-
-    def get_serializer_class(self):
-        if self.action in ("retrieve", "list"):
-            return ReadOnlyTitleSerializer
-        return TitleSerializer
 
 
 class ReviewViewSet(ModelViewSet):
@@ -95,6 +75,20 @@ class ReviewViewSet(ModelViewSet):
         serializer.save(author=self.request.user, title=title)
 
 
+class TitleViewSet(ModelViewSet):
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TitleFilter
+    permission_classes = (IsAdminOrReadOnly,)
+    queryset = Title.objects.all().annotate(
+        Avg("reviews__score")
+    )
+
+    def get_serializer_class(self):
+        if self.action in ("retrieve", "list"):
+            return ReadOnlyTitleSerializer
+        return TitleSerializer
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
@@ -109,21 +103,6 @@ def signup(request):
     send_verify_code(user)
 
     return Response(data=serializer.data, status=HTTP_200_OK)
-
-
-class TitleViewSet(ModelViewSet):
-    queryset = Title.objects.all().annotate(
-        Avg("reviews__score")
-    ).order_by("name")
-    serializer_class = TitleSerializer
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = TitleFilter
-
-    def get_serializer_class(self):
-        if self.action in ("retrieve", "list"):
-            return ReadOnlyTitleSerializer
-        return TitleSerializer
 
 
 @api_view(['POST'])
@@ -155,7 +134,7 @@ def token(request):
 
 
 class UserViewSet(ModelViewSet):
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (SearchFilter,)
     lookup_field = 'username'
     permission_classes = (IsAdmin,)
     queryset = User.objects.all()

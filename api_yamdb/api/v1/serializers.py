@@ -124,31 +124,43 @@ class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
 
 
 class TitleSerializer(ModelSerializer):
-    category = SlugRelatedField(
-        slug_field='slug', queryset=Category.objects.all()
-    )
-    genre = SlugRelatedField(
-        slug_field='slug', many=True, queryset=Genre.objects.all()
-    )
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
+    rating = IntegerField(default=0)
 
     class Meta:
         fields = (
             'id',
-            'category',
-            'description',
-            'genre',
             'name',
             'year',
+            'rating',
+            'description',
+            'genre',
+            'category',
         )
         model = Title
+        read_only_fields = (
+            'id',
+            'name',
+            'year',
+            'rating',
+            'description',
+            'genre',
+            'category',
+        )
 
 
-class ReadOnlyTitleSerializer(ModelSerializer):
-    category = CategorySerializer()
-    genre = GenreSerializer(many=True)
-    rating = IntegerField(
-        source='reviews__score__avg', read_only=True
+class TitlePostSerialzier(ModelSerializer):
+    category = SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all()
     )
+    genre = SlugRelatedField(
+        slug_field='slug',
+        queryset=Genre.objects.all(),
+        many=True
+    )
+    rating = IntegerField(required=False)
 
     class Meta:
         fields = (

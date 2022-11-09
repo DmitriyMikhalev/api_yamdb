@@ -16,11 +16,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Genre, Review, Title
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorOrModeratorOrAdminOrReadOnly)
-from .serializers import (CategorySerializer,
-                          CommentSerializer, GenreSerializer,
-                          ReadOnlyTitleSerializer, ReviewSerializer,
-                          SignUpSerializer, TitleSerializer, TokenSerializer,
-                          UserSerializer, UserSerializerProtected)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, ReviewSerializer, SignUpSerializer,
+                          TitlePostSerialzier, TitleSerializer,
+                          TokenSerializer, UserSerializer,
+                          UserSerializerProtected)
 from .utils import send_verify_code
 
 User = get_user_model()
@@ -79,13 +79,12 @@ class TitleViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
     permission_classes = (IsAdminOrReadOnly,)
-    queryset = Title.objects.all().annotate(
-        Avg("reviews__score")
-    )
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score'))
 
     def get_serializer_class(self):
-        if self.action in ("retrieve", "list"):
-            return ReadOnlyTitleSerializer
+        if self.request.method in ['POST', 'PUT', 'PATCH']:
+            return TitlePostSerialzier
         return TitleSerializer
 
 

@@ -68,20 +68,20 @@ class CommentSerializer(ModelSerializer):
     )
 
     class Meta:
-        model = Comment
         fields = (
             'id',
             'text',
             'pub_date',
             'author',
         )
+        model = Comment
 
 
 class GenreSerializer(ModelSerializer):
 
     class Meta:
-        model = Genre
         fields = ('name', 'slug')
+        model = Genre
 
 
 class ReviewSerializer(ModelSerializer):
@@ -105,7 +105,6 @@ class ReviewSerializer(ModelSerializer):
         return data
 
     class Meta:
-        model = Review
         fields = (
             'id',
             'text',
@@ -113,6 +112,7 @@ class ReviewSerializer(ModelSerializer):
             'score',
             'pub_date',
         )
+        model = Review
 
 
 class SignUpSerializer(ModelSerializer, ValidateUsernameEmailMixin):
@@ -132,7 +132,6 @@ class TitleSerializer(ModelSerializer):
     )
 
     class Meta:
-        model = Title
         fields = (
             'id',
             'category',
@@ -141,6 +140,7 @@ class TitleSerializer(ModelSerializer):
             'name',
             'year',
         )
+        model = Title
 
 
 class ReadOnlyTitleSerializer(ModelSerializer):
@@ -151,7 +151,6 @@ class ReadOnlyTitleSerializer(ModelSerializer):
     )
 
     class Meta:
-        model = Title
         fields = (
             'id',
             'name',
@@ -161,6 +160,7 @@ class ReadOnlyTitleSerializer(ModelSerializer):
             'genre',
             'category',
         )
+        model = Title
 
 
 class TokenSerializer(Serializer):

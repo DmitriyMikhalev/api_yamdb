@@ -1,6 +1,7 @@
 import datetime
 
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -9,11 +10,11 @@ User = get_user_model()
 
 class Category(models.Model):
     name = models.CharField(
-        max_length=256,
+        max_length=settings.LIMIT_CHAT,
         verbose_name='Название'
     )
     slug = models.SlugField(
-        max_length=50,
+        max_length=settings.LIMIT_SLUG,
         verbose_name='Идентификатор',
         unique=True
     )
@@ -57,11 +58,11 @@ class Comment(models.Model):
 
 class Genre(models.Model):
     name = models.CharField(
-        max_length=256,
+        max_length=settings.LIMIT_CHAT,
         verbose_name='Название'
     )
     slug = models.SlugField(
-        max_length=50,
+        max_length=settings.LIMIT_SLUG,
         verbose_name='Идентификатор',
         unique=True
     )
@@ -96,8 +97,8 @@ class Review(models.Model):
     )
     score = models.IntegerField(
         validators=[
-            MinValueValidator(1),
-            MaxValueValidator(10)
+            MinValueValidator(settings.MIN_LIMIT_VALUE),
+            MaxValueValidator(settings.MAX_LIMIT_VALUE)
         ],
     )
     text = models.TextField()
@@ -120,7 +121,7 @@ class Review(models.Model):
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return self.text
+        return self.text[:settings.LIMIT_REVIEW_STR]
 
 
 class Title(models.Model):
@@ -136,7 +137,7 @@ class Title(models.Model):
         to='Genre',
         verbose_name='Жанр'
     )
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=settings.LIMIT_CHAT)
     year = models.IntegerField(
         validators=[
             MinValueValidator(0),
